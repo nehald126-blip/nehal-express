@@ -88,8 +88,5 @@ app.use(errorHandler);
 connectDB();
 
 app.listen(PORT, () => {
-  console.log(`Nehal Express server running → http://localhost:${PORT}`);
-  if (process.env.NODE_ENV !== 'production') {
-    console.log(`Admin dashboard           → http://localhost:${PORT}/admin  (admin / admin123)`);
-  }
+  console.log(`Nehal Express server running on port ${PORT}`);
 });

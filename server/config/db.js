@@ -8,11 +8,9 @@ async function connectDB() {
     const mongoUri = process.env.MONGO_URI;
 
     if (!mongoUri) {
-      console.log('⚠️ MONGO_URI not found. Running with JSON database for now.');
+      console.warn('⚠️ MONGO_URI not found. Running with JSON database for now.');
       return false;
     }
-
-    console.log('Mongo URI:', mongoUri.replace(/:([^:@]+)@/, ':****@'));
 
     await mongoose.connect(mongoUri);
 

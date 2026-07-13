@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Nehal Express — Admin</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,600;1,9..144,500&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/css/style.css" />
+<link rel="stylesheet" href="/css/admin.css" />
+</head>
+<body class="admin-body">
+
+<!-- ================= LOGIN SCREEN ================= -->
+<div class="admin-login-screen" id="loginScreen">
+  <div class="admin-login-card">
+    <p class="wordmark small">Nehal <span>Express</span></p>
+    <h2>Admin dashboard</h2>
+    <p class="muted">Sign in to manage products and orders.</p>
+    <form id="loginForm">
+      <label>Username<input type="text" id="loginUsername" value="admin" required /></label>
+      <label>Password<input type="password" id="loginPassword" value="" required placeholder="admin123" /></label>
+      <button class="btn btn-primary btn-block" type="submit">Sign in</button>
+      <p class="checkout-error" id="loginError" hidden></p>
+    </form>
+    <p class="login-hint">Default credentials: <strong>admin</strong> / <strong>admin123</strong></p>
+  </div>
+</div>
+
+<!-- ================= DASHBOARD ================= -->
+<div class="admin-shell" id="adminShell" hidden>
+  <aside class="admin-sidebar">
+    <p class="wordmark small">Nehal <span>Express</span></p>
+    <nav class="admin-nav">
+      <button class="admin-nav-link active" data-view="overview">Overview</button>
+      <button class="admin-nav-link" data-view="products">Products</button>
+      <button class="admin-nav-link" data-view="orders">Orders</button>
+      <button class="admin-nav-link" data-view="coupons">Coupons</button>
+    </nav>
+    <button class="btn btn-ghost btn-block" id="logoutBtn" style="margin-top:auto;">Log out</button>
+  </aside>
+
+  <main class="admin-main">
+    <!-- OVERVIEW -->
+    <section class="admin-view" id="view-overview">
+      <h2>Overview</h2>
+      <h3 class="section-title">Revenue</h3>
+      <div class="stat-grid" id="revenueStatGrid"></div>
+      <h3 class="section-title">Orders</h3>
+      <div class="stat-grid" id="orderStatGrid"></div>
+      <h3 class="section-title">Products & customers</h3>
+      <div class="stat-grid" id="productStatGrid"></div>
+      <div class="analytics-grid">
+        <section class="analytics-panel">
+          <h3>Payment methods</h3>
+          <div id="paymentMethodBreakdown"></div>
+        </section>
+        <section class="analytics-panel">
+          <h3>Payment status</h3>
+          <div id="paymentStatusBreakdown"></div>
+        </section>
+        <section class="analytics-panel">
+          <h3>Best-selling products</h3>
+          <div id="bestSellingProducts"></div>
+        </section>
+        <section class="analytics-panel">
+          <h3>Low-stock alerts</h3>
+          <div id="lowStockAlerts"></div>
+        </section>
+      </div>
+      <h3 class="section-title">Recent orders</h3>
+      <div class="table-wrap">
+        <table class="admin-table" id="recentOrdersTable">
+          <thead><tr><th>Order</th><th>Customer</th><th>Items</th><th>Total</th><th>Status</th><th>Date</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <h3 class="section-title">Recent paid orders</h3>
+      <div class="table-wrap">
+        <table class="admin-table" id="recentPaidOrdersTable">
+          <thead><tr><th>Order</th><th>Customer</th><th>Total</th><th>Payment</th><th>Date</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- PRODUCTS -->
+    <section class="admin-view" id="view-products" hidden>
+      <div class="view-head">
+        <h2>Products</h2>
+        <button class="btn btn-primary" id="addProductBtn">+ Add product</button>
+      </div>
+      <div class="table-wrap">
+        <table class="admin-table" id="productsTable">
+          <thead><tr><th></th><th>Name</th><th>Category</th><th>Price</th><th>Stock</th><th>Rating</th><th></th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ORDERS -->
+    <section class="admin-view" id="view-orders" hidden>
+      <div class="view-head">
+        <h2>Orders</h2>
+        <select id="orderStatusFilter" aria-label="Filter orders by status">
+          <option value="all">All statuses</option>
+          <option value="Placed">Placed</option>
+          <option value="Packed">Packed</option>
+          <option value="Shipped">Shipped</option>
+          <option value="Delivered">Delivered</option>
+          <option value="Cancelled">Cancelled</option>
+        </select>
+      </div>
+      <div class="table-wrap">
+        <table class="admin-table" id="ordersTable">
+          <thead><tr><th>Order</th><th>Customer</th><th>Phone</th><th>Items</th><th>Total</th><th>Payment</th><th>Status</th><th>Date</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- COUPONS -->
+    <section class="admin-view" id="view-coupons" hidden>
+      <div class="view-head">
+        <h2>Coupons</h2>
+        <button class="btn btn-primary" id="addCouponBtn">+ Add coupon</button>
+      </div>
+      <div class="table-wrap">
+        <table class="admin-table" id="couponsTable">
+          <thead><tr><th>Code</th><th>Type</th><th>Value</th><th>Min order</th><th>Max discount</th><th>Usage</th><th>Expiry</th><th>Status</th><th></th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+</div>
+
+<!-- ================= PRODUCT FORM MODAL ================= -->
+<div class="overlay" id="productFormOverlay" aria-hidden="true">
+  <div class="modal product-form-modal" role="dialog" aria-modal="true" aria-labelledby="productFormTitle">
+    <button class="modal-close" id="productFormClose" type="button" aria-label="Close product form">&times;</button>
+    <div class="checkout-body">
+      <h3 id="productFormTitle">Add product</h3>
+      <form id="productForm">
+        <input type="hidden" id="pfId" />
+        <div class="checkout-grid">
+          <label>Name<input type="text" id="pfName" required /></label>
+          <label>Category
+            <select id="pfCategory" required></select>
+          </label>
+        </div>
+        <div class="checkout-grid">
+          <label>Price (₹)<input type="number" id="pfPrice" min="0" required /></label>
+          <label>MRP (₹)<input type="number" id="pfMrp" min="0" /></label>
+        </div>
+        <div class="checkout-grid">
+          <label>Stock<input type="number" id="pfStock" min="0" required /></label>
+          <label>Image URL<input type="text" id="pfImage" placeholder="https://…" /></label>
+        </div>
+        <div class="image-manager">
+          <div class="image-actions">
+            <button class="btn btn-ghost" type="button" id="addImageUrlBtn">Add URL</button>
+            <button class="btn btn-ghost" type="button" id="uploadImageBtn">Upload image</button>
+            <input type="file" id="pfImageUpload" accept="image/*" multiple hidden />
+          </div>
+          <div class="image-preview-grid" id="productImagePreview"></div>
+        </div>
+        <div class="checkout-grid">
+          <label>Sizes (comma separated)<input type="text" id="pfSizes" placeholder="S, M, L, XL" /></label>
+          <label>Colours (comma separated)<input type="text" id="pfColors" placeholder="Black, White" /></label>
+        </div>
+        <div class="field-full">
+          <label>Description<textarea id="pfDescription" rows="3"></textarea></label>
+        </div>
+        <button class="btn btn-primary btn-block" type="submit">Save product</button>
+        <p class="checkout-error" id="productFormError" hidden></p>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- ================= COUPON FORM MODAL ================= -->
+<div class="overlay" id="couponFormOverlay" aria-hidden="true">
+  <div class="modal product-form-modal" role="dialog" aria-modal="true" aria-labelledby="couponFormTitle">
+    <button class="modal-close" id="couponFormClose" type="button" aria-label="Close coupon form">&times;</button>
+    <div class="checkout-body">
+      <h3 id="couponFormTitle">Add coupon</h3>
+      <form id="couponForm">
+        <input type="hidden" id="cfId" />
+        <div class="checkout-grid">
+          <label>Code<input type="text" id="cfCode" required /></label>
+          <label>Type
+            <select id="cfType" required>
+              <option value="percentage">Percentage</option>
+              <option value="fixed">Fixed</option>
+            </select>
+          </label>
+        </div>
+        <div class="checkout-grid">
+          <label>Value<input type="number" id="cfValue" min="0" step="0.01" required /></label>
+          <label>Minimum order<input type="number" id="cfMinOrder" min="0" step="0.01" /></label>
+        </div>
+        <div class="checkout-grid">
+          <label>Max discount<input type="number" id="cfMaxDiscount" min="0" step="0.01" /></label>
+          <label>Usage limit<input type="number" id="cfUsageLimit" min="0" /></label>
+        </div>
+        <div class="checkout-grid">
+          <label>Expiry date<input type="date" id="cfExpiryDate" /></label>
+          <label class="check-row"><input type="checkbox" id="cfIsActive" checked /> Active</label>
+        </div>
+        <button class="btn btn-primary btn-block" type="submit">Save coupon</button>
+        <p class="checkout-error" id="couponFormError" hidden></p>
+      </form>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="/js/animations.js"></script>
+<script src="/js/admin.js"></script>
+</body>
+</html>

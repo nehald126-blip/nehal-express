@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>My Account - Nehal Express</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;1,9..144,500&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/css/style.css" />
+<link rel="stylesheet" href="/css/profile.css" />
+</head>
+<body>
+
+<header class="site-header" id="siteHeader">
+  <div class="promo-bar">Free shipping on orders above Rs 1,499 - Cash on Delivery available across India</div>
+  <div class="header-main">
+    <button class="icon-btn menu-toggle" id="menuToggle" aria-label="Open menu">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M3 6h18M3 12h18M3 18h18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+    </button>
+
+    <a href="/" class="wordmark">Nehal <span>Express</span></a>
+
+    <nav class="main-nav" id="mainNav">
+      <a class="nav-link" href="/#catalog">All</a>
+      <a class="nav-link" href="/#catalog">Women Ethnic</a>
+      <a class="nav-link" href="/#catalog">Women Western</a>
+      <a class="nav-link" href="/#catalog">Men Shirts</a>
+      <a class="nav-link" href="/#catalog">Accessories</a>
+    </nav>
+
+    <div class="header-actions">
+      <a class="account-header-link active" href="/profile" aria-label="My account">
+        <span class="account-header-icon">NE</span>
+        <span>Account</span>
+      </a>
+      <a class="icon-btn" href="/#catalog" aria-label="Shop">
+        <svg width="21" height="21" viewBox="0 0 24 24" fill="none"><path d="M6 6h15l-1.5 9h-12z" stroke="currentColor" stroke-width="1.8"/><circle cx="9" cy="20" r="1.4" fill="currentColor"/><circle cx="18" cy="20" r="1.4" fill="currentColor"/><path d="M6 6L4.5 3H2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+      </a>
+    </div>
+  </div>
+</header>
+
+<main class="account-page">
+  <section class="account-auth" id="authPanel" hidden>
+    <div class="auth-copy">
+      <p class="account-kicker">Nehal Express Account</p>
+      <h1>Track orders, save addresses, and check out faster.</h1>
+      <p>Sign in with the email and password used during registration, or create a new account in a few seconds.</p>
+    </div>
+
+    <div class="auth-box">
+      <div class="auth-card-head">
+        <span class="auth-badge">Secure account</span>
+        <h2>Welcome to Nehal Express</h2>
+        <p>Access your orders, addresses, and account settings.</p>
+      </div>
+
+      <div class="auth-tabs" role="tablist">
+        <button class="auth-tab active" type="button" data-auth-tab="login">Login</button>
+        <button class="auth-tab" type="button" data-auth-tab="signup">Sign up</button>
+      </div>
+
+      <form id="loginForm" class="auth-form is-active">
+        <label>Email<input type="email" id="loginEmail" autocomplete="email" required /></label>
+        <label>Password<input type="password" id="loginPassword" autocomplete="current-password" required /></label>
+        <div class="auth-link-row">
+          <button class="text-link" type="button" id="forgotPasswordBtn">Forgot password?</button>
+        </div>
+        <button class="btn btn-primary btn-block" type="submit">Login</button>
+      </form>
+
+      <form id="signupForm" class="auth-form" hidden>
+
+        <label>Name<input type="text" id="signupName" autocomplete="name" required /></label>
+        <label>Email<input type="email" id="signupEmail" autocomplete="email" required /></label>
+        <label>Phone<input type="tel" id="signupPhone" pattern="[0-9]{10}" autocomplete="tel" required /></label>
+        <label>Password<input type="password" id="signupPassword" autocomplete="new-password" minlength="6" required /></label>
+
+        <div class="signup-otp" id="signupOtpPanel">
+          <button class="btn btn-ghost btn-block" type="button" id="sendSignupOtpBtn">Send OTP</button>
+          <div class="otp-field" id="signupOtpField" hidden>
+            <label>OTP (6 digits)
+              <input type="text" inputmode="numeric" id="signupOtp" pattern="\d{6}" maxlength="6" autocomplete="one-time-code" placeholder="123456" required />
+            </label>
+
+            <div class="otp-actions">
+              <button class="btn btn-primary" type="button" id="verifySignupOtpBtn">Verify OTP</button>
+              <button class="btn btn-ghost" type="button" id="resendSignupOtpBtn">Resend OTP</button>
+            </div>
+          </div>
+        </div>
+
+        <button class="btn btn-primary btn-block" type="submit" id="createAccountBtn" disabled>Create account</button>
+      </form>
+
+      <form id="forgotPasswordForm" class="auth-form" hidden>
+        <div class="reset-copy">
+          <h3>Reset your password</h3>
+          <p>Enter your email to receive a password reset OTP.</p>
+        </div>
+        <label>Email<input type="email" id="resetEmail" autocomplete="email" required /></label>
+        <button class="btn btn-ghost btn-block" type="button" id="sendResetOtpBtn">Send reset OTP</button>
+        <div class="reset-fields" id="resetFields" hidden>
+          <label>OTP (6 digits)
+            <input type="text" inputmode="numeric" id="resetOtp" pattern="\d{6}" maxlength="6" autocomplete="one-time-code" placeholder="123456" required />
+          </label>
+          <label>New password<input type="password" id="resetNewPassword" autocomplete="new-password" minlength="6" required /></label>
+          <button class="btn btn-primary btn-block" type="submit">Update password</button>
+        </div>
+        <button class="text-link auth-back-link" type="button" id="backToLoginBtn">Back to login</button>
+      </form>
+
+      <div class="auth-success-card" id="authSuccessCard" hidden aria-live="polite">
+        <span class="auth-success-check" aria-hidden="true"></span>
+        <p class="account-kicker" id="authSuccessKicker">Signed in</p>
+        <h3 id="authSuccessTitle">Welcome back</h3>
+        <p id="authSuccessText">Taking you to your account dashboard.</p>
+        <button class="btn btn-primary btn-block" type="button" id="goAccountBtn">Go to My Account</button>
+      </div>
+
+      <p class="form-message" id="authMessage" hidden></p>
+    </div>
+  </section>
+
+  <section class="account-shell" id="accountShell" hidden>
+    <aside class="account-sidebar">
+      <div class="account-user">
+        <span class="account-avatar" id="accountAvatar">NE</span>
+        <div>
+          <span class="muted-label">Hello</span>
+          <strong id="sidebarName">Customer</strong>
+        </div>
+      </div>
+      <nav class="account-nav" aria-label="Account sections">
+        <button class="account-nav-item active" type="button" data-section="personal">Personal Information</button>
+        <button class="account-nav-item" type="button" data-section="addresses">Saved Addresses</button>
+        <button class="account-nav-item" type="button" data-section="orders">Order History</button>
+        <button class="account-nav-item" type="button" data-section="status">Order Status</button>
+        <button class="account-nav-item" type="button" data-section="wishlist">Wishlist</button>
+        <button class="account-nav-item" type="button" data-section="security">Security</button>
+        <button class="account-nav-item" type="button" data-section="help">Help</button>
+        <button class="account-nav-item danger" type="button" id="logoutBtn">Logout</button>
+      </nav>
+    </aside>
+
+    <div class="account-content">
+      <div class="account-topline">
+        <div>
+          <p class="account-kicker">My Account</p>
+          <h1 id="pageTitle">Personal Information</h1>
+        </div>
+        <span class="secure-pill">JWT protected</span>
+      </div>
+
+      <section class="account-section active" id="section-personal">
+        <div class="section-head">
+          <div>
+            <h2>Personal Information</h2>
+            <p>Update your account details used for orders and delivery updates.</p>
+          </div>
+        </div>
+        <form class="account-form" id="profileForm">
+          <label>Name<input type="text" id="profileName" required /></label>
+          <label>Email<input type="email" id="profileEmail" required /></label>
+          <label>Phone<input type="tel" id="profilePhone" pattern="[0-9]{10}" required /></label>
+          <button class="btn btn-primary" type="submit">Save changes</button>
+        </form>
+      </section>
+
+      <section class="account-section" id="section-addresses">
+        <div class="section-head">
+          <div>
+            <h2>Saved Addresses</h2>
+            <p>Manage delivery addresses for faster checkout.</p>
+          </div>
+          <button class="btn btn-primary" type="button" id="newAddressBtn">Add address</button>
+        </div>
+
+        <form class="address-form" id="addressForm" hidden>
+          <input type="hidden" id="addressId" />
+          <label>Label<input type="text" id="addressLabel" placeholder="Home, Work" /></label>
+          <label>Recipient name<input type="text" id="addressName" required /></label>
+          <label>Phone<input type="tel" id="addressPhone" pattern="[0-9]{10}" required /></label>
+          <label class="wide">Address<textarea id="addressLine" rows="3" required></textarea></label>
+          <label>Pincode<input type="text" id="addressPincode" pattern="[0-9]{6}" required /></label>
+          <label>City<input type="text" id="addressCity" /></label>
+          <label>State<input type="text" id="addressState" /></label>
+          <label class="check-row"><input type="checkbox" id="addressDefault" /> Set as default</label>
+          <div class="form-actions">
+            <button class="btn btn-primary" type="submit">Save address</button>
+            <button class="btn btn-ghost" type="button" id="cancelAddressBtn">Cancel</button>
+          </div>
+        </form>
+
+        <div class="address-grid" id="addressList"></div>
+      </section>
+
+      <section class="account-section" id="section-orders">
+        <div class="section-head">
+          <div>
+            <h2>Order History</h2>
+            <p>Review your previous purchases and delivery details.</p>
+          </div>
+        </div>
+        <div class="order-list" id="orderList"></div>
+      </section>
+
+      <section class="account-section" id="section-status">
+        <div class="section-head">
+          <div>
+            <h2>Order Status</h2>
+            <p>Quickly check the latest status of any order in your account.</p>
+          </div>
+        </div>
+        <div class="status-tools">
+          <select id="statusOrderSelect"></select>
+          <button class="btn btn-primary" type="button" id="statusRefreshBtn">Refresh</button>
+        </div>
+        <div id="statusPanel"></div>
+      </section>
+
+      <section class="account-section" id="section-wishlist">
+        <div class="section-head">
+          <div>
+            <h2>Wishlist</h2>
+            <p>Your saved styles will appear here.</p>
+          </div>
+        </div>
+        <div class="wishlist-grid" id="wishlistList"></div>
+      </section>
+
+      <section class="account-section" id="section-security">
+        <div class="section-head">
+          <div>
+            <h2>Security</h2>
+            <p>Change your password and manage account access.</p>
+          </div>
+        </div>
+        <form class="account-form" id="passwordForm">
+          <label>Current password<input type="password" id="currentPassword" autocomplete="current-password" required /></label>
+          <label>New password<input type="password" id="newPassword" autocomplete="new-password" minlength="6" required /></label>
+          <label>Confirm new password<input type="password" id="confirmPassword" autocomplete="new-password" minlength="6" required /></label>
+          <button class="btn btn-primary" type="submit">Update password</button>
+        </form>
+      </section>
+
+      <section class="account-section" id="section-help">
+        <div class="section-head">
+          <div>
+            <h2>Help</h2>
+            <p>Get account support and manage advanced account actions.</p>
+          </div>
+        </div>
+
+        <div class="help-grid">
+          <div class="help-card">
+            <h3>Need help with an order?</h3>
+            <p>Keep your order ID ready when contacting support so we can find it faster.</p>
+          </div>
+
+          <form class="delete-account-card" id="deleteAccountForm">
+            <div>
+              <p class="account-kicker">Danger zone</p>
+              <h3>Delete account</h3>
+              <p>This permanently removes your account, saved addresses, and wishlist. Your past order records may remain for billing and support.</p>
+            </div>
+            <label>Current password<input type="password" id="deleteAccountPassword" autocomplete="current-password" required /></label>
+            <label>Type DELETE to confirm<input type="text" id="deleteAccountConfirm" autocomplete="off" required /></label>
+            <button class="btn btn-danger" type="submit">Delete account</button>
+          </form>
+        </div>
+      </section>
+    </div>
+  </section>
+</main>
+
+<footer class="site-footer">
+  <div class="footer-cols">
+    <div>
+      <p class="wordmark small">Nehal <span>Express</span></p>
+      <p class="footer-note">Clothing &amp; accessories, delivered across India. Prices shown are in Indian Rupees, inclusive of taxes.</p>
+    </div>
+    <div>
+      <h4>Customer care</h4>
+      <p>Shipping &amp; returns</p>
+      <p>Track your order</p>
+      <p>Size guide</p>
+    </div>
+    <div>
+      <h4>Company</h4>
+      <p>About Nehal Express</p>
+      <p>Store policies</p>
+      <p>Contact us</p>
+    </div>
+  </div>
+  <p class="footer-copyright">2026 Nehal Express. All rights reserved.</p>
+</footer>
+
+<div class="profile-modal-backdrop" id="orderDetailModal" hidden>
+  <div class="profile-modal" role="dialog" aria-modal="true" aria-labelledby="orderDetailTitle">
+    <button class="profile-modal-close" type="button" id="orderDetailClose" aria-label="Close order details">&times;</button>
+    <div id="orderDetailBody"></div>
+  </div>
+</div>
+
+<div class="profile-modal-backdrop" id="wishlistProductModal" hidden>
+  <div class="profile-modal" role="dialog" aria-modal="true" aria-labelledby="wishlistProductTitle">
+    <button class="profile-modal-close" type="button" id="wishlistProductClose" aria-label="Close product details">&times;</button>
+    <div id="wishlistProductBody"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+<script src="/js/animations.js"></script>
+<script src="/js/profile.js"></script>
+</body>
+</html>

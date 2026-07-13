@@ -1,3 +1,4 @@
+const crypto = require('crypto');
 const bcrypt = require('bcryptjs');
 const Admin = require('../models/Admin');
 const Product = require('../models/Product');
@@ -114,6 +115,48 @@ async function login(req, res) {
   }
   const token = createSession(admin.id);
   res.json({ token, name: admin.name, username: admin.username });
+}
+
+async function resetCredentials(req, res) {
+  const configuredToken = process.env.ADMIN_RESET_TOKEN;
+  if (typeof configuredToken !== 'string' || !configuredToken.trim()) {
+    throw new AppError(404, 'Not found');
+  }
+
+  const suppliedToken = req.get('x-admin-reset-token') || '';
+  const configuredTokenBuffer = Buffer.from(configuredToken);
+  const suppliedTokenBuffer = Buffer.from(suppliedToken);
+  const tokenIsValid = suppliedTokenBuffer.length === configuredTokenBuffer.length
+    && crypto.timingSafeEqual(suppliedTokenBuffer, configuredTokenBuffer);
+
+  if (!tokenIsValid) {
+    throw new AppError(401, 'Invalid reset token');
+  }
+
+  const username = String(req.body?.username || '').trim().toLowerCase();
+  const password = typeof req.body?.password === 'string' ? req.body.password : '';
+  if (username.length < 5 || password.length < 12) {
+    throw new AppError(400, 'Invalid username or password');
+  }
+
+  try {
+    let admin = await Admin.findOne({ username: 'admin' });
+    if (!admin) {
+      admin = await Admin.findOne().sort({ _id: 1 });
+    }
+    if (!admin) {
+      throw new AppError(404, 'Admin not found');
+    }
+
+    admin.username = username;
+    admin.passwordHash = bcrypt.hashSync(password, 10);
+    await admin.save();
+
+    res.json({ message: 'Admin credentials updated successfully' });
+  } catch (error) {
+    if (error instanceof AppError) throw error;
+    throw new AppError(500, 'Failed to update admin credentials');
+  }
 }
 
 async function logout(req, res) {
@@ -362,6 +405,7 @@ async function deleteCoupon(req, res) {
 
 module.exports = {
   login,
+  resetCredentials,
   logout,
   getStats,
   getProducts,

@@ -6,7 +6,8 @@
   "scripts": {
     "start": "node server/server.js",
     "dev": "nodemon server/server.js",
-    "seed:mongo": "node server/utils/seedMongo.js"
+    "seed:mongo": "node server/utils/seedMongo.js",
+    "admin:change": "node server/utils/changeAdminCredentials.js"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",

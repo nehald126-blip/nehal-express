@@ -1,6 +1,7 @@
 const express = require('express');
 const {
   login,
+  resetCredentials,
   logout,
   getStats,
   getProducts,
@@ -20,6 +21,8 @@ const asyncHandler = require('../utils/asyncHandler');
 const router = express.Router();
 
 router.post('/login', asyncHandler(login));
+// TEMPORARY ADMIN RESET ROUTE — remove after successful credential rotation.
+router.post('/reset-credentials', asyncHandler(resetCredentials));
 router.post('/logout', requireAdmin, asyncHandler(logout));
 router.get('/stats', requireAdmin, asyncHandler(getStats));
 router.get('/products', requireAdmin, asyncHandler(getProducts));

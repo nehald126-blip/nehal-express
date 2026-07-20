@@ -19,6 +19,48 @@ const rupee = (n) => '₹' + Number(n).toLocaleString('en-IN');
 const AUTH_TOKEN_KEY = 'ne_auth_token';
 let productEmptyText = '';
 let productLoadSequence = 0;
+const cartProductCache = new Map();
+const cartProductRequests = new Map();
+const CART_PRODUCT_CACHE_MS = 60 * 1000;
+let cartChangeSequence = 0;
+let cartRenderSequence = 0;
+let orderSummarySequence = 0;
+
+function loadCartProduct(productId) {
+  const cached = cartProductCache.get(productId);
+  if (cached && Date.now() - cached.loadedAt < CART_PRODUCT_CACHE_MS) {
+    return Promise.resolve(cached.product);
+  }
+
+  const pending = cartProductRequests.get(productId);
+  if (pending) return pending;
+
+  const request = fetch('/api/products/' + productId)
+    .then(async (res) => {
+      const product = await res.json();
+      if (!res.ok) throw new Error(product.error || 'Could not load product');
+      return product;
+    })
+    .then((product) => {
+      cartProductCache.set(productId, { product, loadedAt: Date.now() });
+      return product;
+    })
+    .finally(() => {
+      if (cartProductRequests.get(productId) === request) {
+        cartProductRequests.delete(productId);
+      }
+    });
+
+  cartProductRequests.set(productId, request);
+  return request;
+}
+
+async function loadCartProductDetails(cart) {
+  const productIds = [...new Set(cart.map((item) => item.productId))];
+  const products = await Promise.all(productIds.map(loadCartProduct));
+  const productsById = new Map(products.map((product) => [product.id, product]));
+  return cart.map((item) => productsById.get(item.productId));
+}
 
 function setBusy(el, busy) {
   if (!el) return;
@@ -140,6 +182,7 @@ async function loadWishlist() {
 }
 
 function saveCart() {
+  cartChangeSequence += 1;
   localStorage.setItem('ne_cart', JSON.stringify(state.cart));
   renderCartCount();
 }
@@ -639,6 +682,7 @@ function addCurrentToCart() {
   if (existing) existing.qty += sel.qty;
   else state.cart.push({ productId: p.id, size: sel.size, color: sel.color, qty: sel.qty });
 
+  cartProductCache.set(p.id, { product: p, loadedAt: Date.now() });
   saveCart();
   showToast(`Added ${p.name} to your bag`);
   toggleOverlay('productOverlay', false);
@@ -646,6 +690,8 @@ function addCurrentToCart() {
 
 async function renderCart() {
   const wrap = document.getElementById('cartItems');
+  const renderSequence = ++cartRenderSequence;
+  const cartSequence = cartChangeSequence;
 
   if (!state.cart.length) {
     wrap.innerHTML = `
@@ -669,9 +715,11 @@ async function renderCart() {
 
   document.getElementById('checkoutBtn').disabled = false;
 
-  const details = await Promise.all(state.cart.map(i => fetch('/api/products/' + i.productId).then(r => r.json())));
+  const cartSnapshot = state.cart.map((item) => ({ ...item }));
+  const details = await loadCartProductDetails(cartSnapshot);
+  if (renderSequence !== cartRenderSequence || cartSequence !== cartChangeSequence) return;
 
-  wrap.innerHTML = state.cart.map((item, idx) => {
+  wrap.innerHTML = cartSnapshot.map((item, idx) => {
     const p = details[idx];
 
     return `
@@ -695,7 +743,7 @@ async function renderCart() {
   }).join('');
 
   let subtotal = 0;
-  state.cart.forEach((item, idx) => subtotal += details[idx].price * item.qty);
+  cartSnapshot.forEach((item, idx) => subtotal += details[idx].price * item.qty);
   updateCartTotals(subtotal);
 
   wrap.querySelectorAll('.cart-item').forEach(el => {
@@ -714,7 +762,10 @@ async function renderCart() {
     });
 
     el.querySelector('.cart-item-remove').addEventListener('click', () => {
+      const productId = state.cart[idx]?.productId;
       state.cart.splice(idx, 1);
+      cartProductCache.delete(productId);
+      cartProductRequests.delete(productId);
       saveCart();
       renderCart();
     });
@@ -830,10 +881,14 @@ function renderCheckoutForm() {
 }
 
 async function renderOrderSummary() {
-  const details = await Promise.all(state.cart.map(i => fetch('/api/products/' + i.productId).then(r => r.json())));
+  const renderSequence = ++orderSummarySequence;
+  const cartSequence = cartChangeSequence;
+  const cartSnapshot = state.cart.map((item) => ({ ...item }));
+  const details = await loadCartProductDetails(cartSnapshot);
+  if (renderSequence !== orderSummarySequence || cartSequence !== cartChangeSequence) return;
   let subtotal = 0;
 
-  const rows = state.cart.map((item, idx) => {
+  const rows = cartSnapshot.map((item, idx) => {
     const p = details[idx];
     subtotal += p.price * item.qty;
     return `<div class="cart-line"><span>${p.name} × ${item.qty}</span><span>${rupee(p.price * item.qty)}</span></div>`;
@@ -850,8 +905,11 @@ async function renderOrderSummary() {
 }
 
 async function calculateCartSubtotal() {
-  const details = await Promise.all(state.cart.map(i => fetch('/api/products/' + i.productId).then(r => r.json())));
-  return state.cart.reduce((sum, item, idx) => sum + details[idx].price * item.qty, 0);
+  const cartSequence = cartChangeSequence;
+  const cartSnapshot = state.cart.map((item) => ({ ...item }));
+  const details = await loadCartProductDetails(cartSnapshot);
+  if (cartSequence !== cartChangeSequence) return calculateCartSubtotal();
+  return cartSnapshot.reduce((sum, item, idx) => sum + details[idx].price * item.qty, 0);
 }
 
 async function applyCoupon() {

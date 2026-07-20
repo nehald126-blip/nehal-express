@@ -906,7 +906,9 @@ document.getElementById('forgotPasswordForm').addEventListener('submit', async (
 
 let signupState = {
   otpVerified: false,
-  lastOtpEmail: ''
+  lastOtpEmail: '',
+  sendActive: false,
+  verifyActive: false
 };
 
 function setSignupOtpVerified(verified) {
@@ -920,12 +922,14 @@ function getSignupEmail() {
 }
 
 async function sendSignupOtp({ resend = false } = {}) {
+  if (signupState.sendActive) return;
   const email = getSignupEmail();
   if (!email) {
     throw new Error('Email is required');
   }
 
   const sendBtn = resend ? document.getElementById('resendSignupOtpBtn') : document.getElementById('sendSignupOtpBtn');
+  signupState.sendActive = true;
   if (sendBtn) {
     sendBtn.disabled = true;
     sendBtn.textContent = resend ? 'Resending…' : 'Sending…';
@@ -945,9 +949,11 @@ async function sendSignupOtp({ resend = false } = {}) {
     document.getElementById('signupOtpField').hidden = false;
     setSignupOtpVerified(false);
     document.getElementById('signupOtp').value = '';
+    document.getElementById('signupOtp').focus();
 
     showMessage('authMessage', resend ? 'OTP resent. Check your email.' : 'OTP sent. Check your email.', 'success');
   } finally {
+    signupState.sendActive = false;
     if (sendBtn) {
       sendBtn.disabled = false;
       sendBtn.textContent = resend ? 'Resend OTP' : 'Send OTP';
@@ -956,6 +962,7 @@ async function sendSignupOtp({ resend = false } = {}) {
 }
 
 async function verifySignupOtp() {
+  if (signupState.verifyActive) return;
   const email = getSignupEmail();
   const otp = (document.getElementById('signupOtp')?.value || '').trim();
 
@@ -964,6 +971,7 @@ async function verifySignupOtp() {
   }
 
   const verifyBtn = document.getElementById('verifySignupOtpBtn');
+  signupState.verifyActive = true;
   if (verifyBtn) {
     verifyBtn.disabled = true;
     verifyBtn.textContent = 'Verifying…';
@@ -983,6 +991,7 @@ async function verifySignupOtp() {
     setSignupOtpVerified(true);
     showMessage('authMessage', 'Email verified successfully.', 'success');
   } finally {
+    signupState.verifyActive = false;
     if (verifyBtn) {
       verifyBtn.disabled = false;
       verifyBtn.textContent = 'Verify OTP';

@@ -229,6 +229,7 @@ async function sendOtp(req, res) {
   const normalizedEmail = safeEmailNormalize(email);
   const otpType = String(type || '').toUpperCase();
   const isEmailVerification = otpType === 'EMAIL_VERIFY';
+  console.log('OTP request received', { type: otpType });
 
   const user = await User.findOne({ email: normalizedEmail }).select('_id');
 
@@ -251,21 +252,25 @@ async function sendOtp(req, res) {
         : 'password reset';
 
   const shouldSendEmail = isEmailVerification || Boolean(user);
+  if (shouldSendEmail) console.log('OTP email attempt started', { type: otpType });
   const sendResult = shouldSendEmail
     ? await sendOtpEmailSafe({ toEmail: normalizedEmail, otp, purpose: purposeForEmail })
     : { sent: false, skipped: true };
 
   if (shouldSendEmail && !sendResult?.sent) {
-    throw new AppError(500, 'OTP email could not be sent. Please try again later.');
+    console.warn('OTP email rejected', { type: otpType });
+    throw new AppError(502, 'OTP email could not be sent. Please try again later.');
   }
+  if (sendResult?.sent) console.log('OTP email accepted', { type: otpType });
 
-  res.json({ ok: true, otpId, sent: Boolean(sendResult?.sent) });
+  return res.json({ ok: true, otpId, sent: Boolean(sendResult?.sent) });
 }
 
 async function verifyEmailOtp(req, res) {
   const { email, otp } = req.body || {};
   const normalizedEmail = safeEmailNormalize(email);
 
+  console.log('OTP verification attempted', { type: 'EMAIL_VERIFY' });
   await verifyOtp({
     email: normalizedEmail,
     type: 'EMAIL_VERIFY',
@@ -274,7 +279,8 @@ async function verifyEmailOtp(req, res) {
 
   // Current User schema has no persistent email verification field.
   // Endpoint validates OTP without breaking existing auth/signup flows.
-  res.json({ ok: true });
+  console.log('OTP verified', { type: 'EMAIL_VERIFY' });
+  return res.json({ ok: true });
 }
 
 async function forgotPassword(req, res) {
@@ -295,13 +301,17 @@ async function forgotPassword(req, res) {
     ipAddress: req.ip || null
   });
 
-  await sendOtpEmailSafe({
+  const sendResult = await sendOtpEmailSafe({
     toEmail: normalizedEmail,
     otp,
     purpose: 'password reset'
   });
+  if (!sendResult?.sent) {
+    console.warn('Password reset OTP email rejected');
+    throw new AppError(502, 'Password reset email could not be sent. Please try again later.');
+  }
 
-  res.json({ ok: true });
+  return res.json({ ok: true });
 }
 
 async function resetPassword(req, res) {

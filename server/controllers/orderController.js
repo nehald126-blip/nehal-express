@@ -11,6 +11,7 @@ const {
 const { finalizeOrderConfirmation } = require('../utils/orderConfirmationService');
 
 async function createOrder(req, res) {
+  console.log('Checkout request received', { paymentMethod: req.body?.customer?.paymentMethod || 'unknown' });
   const { items, customer, couponCode } = req.body;
   if (!Array.isArray(items) || items.length === 0) {
     throw new AppError(400, 'Cart is empty');
@@ -81,10 +82,16 @@ async function createOrder(req, res) {
 
     await session.commitTransaction();
     order.$session(null);
-    await finalizeOrderConfirmation(order, { customerEmail: customer.email });
-    res.status(201).json(order.toJSON());
+    console.log('Order saved', { orderId: order.id, paymentMethod: order.paymentMethod });
+    const response = order.toJSON();
+    console.log('Order confirmation email attempted', { orderId: order.id });
+    void finalizeOrderConfirmation(order, {
+      customerEmail: customer.email
+    });
+    console.log('Order response sent', { orderId: order.id });
+    return res.status(201).json(response);
   } catch (err) {
-    await session.abortTransaction();
+    if (session.inTransaction()) await session.abortTransaction();
     if (err.statusCode) throw err;
     throw new AppError(400, err.message);
   } finally {

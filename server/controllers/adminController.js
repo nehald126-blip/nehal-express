@@ -360,10 +360,11 @@ async function updateOrderStatus(req, res) {
   const notifyStatuses = ['Packed', 'Shipped', 'Delivered', 'Cancelled'];
   if (oldStatus !== status && notifyStatuses.includes(status) && order.customer?.email) {
     // Best-effort notification: never break the admin status update.
-    await sendOrderStatusEmailSafe(order, oldStatus, status);
+    console.log('Order status email attempted', { orderId: order.id, status });
+    void sendOrderStatusEmailSafe(order, oldStatus, status);
   }
 
-  res.json(order.toJSON());
+  return res.json(order.toJSON());
 }
 
 

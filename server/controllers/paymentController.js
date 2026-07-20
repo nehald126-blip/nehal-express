@@ -36,6 +36,7 @@ function validateCheckoutPayload({ items, customer }) {
 }
 
 async function createRazorpayOrder(req, res) {
+  console.log('Checkout request received', { paymentMethod: 'razorpay' });
   const { items, customer, couponCode } = req.body;
   validateCheckoutPayload({ items, customer });
 
@@ -109,7 +110,8 @@ async function createRazorpayOrder(req, res) {
 
     await session.commitTransaction();
 
-    res.status(201).json({
+    console.log('Order saved', { orderId: order.id, paymentMethod: 'Razorpay' });
+    return res.status(201).json({
       keyId: process.env.RAZORPAY_KEY_ID,
       razorpayOrder: {
         id: razorpayOrder.id,
@@ -119,7 +121,7 @@ async function createRazorpayOrder(req, res) {
       order: order.toJSON()
     });
   } catch (err) {
-    await session.abortTransaction();
+    if (session.inTransaction()) await session.abortTransaction();
     if (err.statusCode) throw err;
     throw new AppError(400, err.message || 'Failed to create payment order');
   } finally {
@@ -128,6 +130,7 @@ async function createRazorpayOrder(req, res) {
 }
 
 async function verifyPayment(req, res) {
+  console.log('Payment verification requested');
   const {
     razorpay_order_id: razorpayOrderId,
     razorpay_payment_id: razorpayPaymentId,
@@ -171,12 +174,17 @@ async function verifyPayment(req, res) {
   order.razorpaySignature = razorpaySignature;
   order.paidAt = order.paidAt || new Date();
   await order.save();
+  console.log('Payment verification completed', { orderId: order.id });
   if (order.couponCode && !wasAlreadyPaid) {
     await incrementCouponUsage(order.couponCode);
   }
-  await finalizeOrderConfirmation(order, { customerEmail: order.customer?.email });
-
-  res.json(order.toJSON());
+  const response = order.toJSON();
+  console.log('Order confirmation email attempted', { orderId: order.id });
+  void finalizeOrderConfirmation(order, {
+    customerEmail: order.customer?.email
+  });
+  console.log('Order response sent', { orderId: order.id });
+  return res.json(response);
 }
 
 module.exports = {

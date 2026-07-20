@@ -1,32 +1,6 @@
-const nodemailer = require('nodemailer');
-
-function getSmtpConfig() {
-  const host = process.env.SMTP_HOST;
-  const rawPort = Number(process.env.SMTP_PORT || 587);
-  const port = Number.isFinite(rawPort) && rawPort > 0 ? rawPort : 587;
-  const user = process.env.SMTP_USER;
-  const pass = process.env.SMTP_PASS;
-  const from = process.env.SMTP_FROM || user;
-
-  if (!host || !user || !pass || !from) {
-    return null;
-  }
-
-  return {
-    host,
-    port,
-    secure: port === 465,
-    auth: { user, pass },
-    from
-  };
-}
+const { sendEmail } = require('./emailService');
 
 async function sendOtpEmail({ toEmail, otp, purpose }) {
-  const smtp = getSmtpConfig();
-  if (!smtp) {
-    throw new Error('SMTP configuration is incomplete. OTP email cannot be sent.');
-  }
-
   const safePurpose = String(purpose || 'verification').toLowerCase();
   const subject = `Nehal Express OTP - ${safePurpose}`;
 
@@ -39,15 +13,7 @@ async function sendOtpEmail({ toEmail, otp, purpose }) {
     <p>— Nehal Express</p>
   `;
 
-  const transporter = nodemailer.createTransport({
-    host: smtp.host,
-    port: smtp.port,
-    secure: smtp.secure,
-    auth: smtp.auth
-  });
-
-  await transporter.sendMail({
-    from: smtp.from,
+  await sendEmail({
     to: toEmail,
     subject,
     text: `Your Nehal Express OTP is: ${otp}. It expires in 10 minutes.`,

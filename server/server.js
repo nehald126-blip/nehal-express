@@ -7,6 +7,7 @@ const express = require('express');
 
 const connectDB = require('./config/db');
 const errorHandler = require('./middleware/errorHandler');
+const { verifyEmailTransporter } = require('./utils/emailService');
 
 const categoryRoutes = require('./routes/categoryRoutes');
 const productRoutes = require('./routes/productRoutes');
@@ -85,8 +86,19 @@ app.get('/', (req, res) => {
 
 app.use(errorHandler);
 
-connectDB();
+async function startServer() {
+  try {
+    await connectDB();
 
-app.listen(PORT, () => {
-  console.log(`Nehal Express server running on port ${PORT}`);
-});
+    void verifyEmailTransporter();
+
+    app.listen(PORT, () => {
+      console.log(`Nehal Express server running on port ${PORT}`);
+    });
+  } catch (error) {
+    console.error('Server startup failed:', error.message);
+    process.exit(1);
+  }
+}
+
+void startServer();

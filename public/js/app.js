@@ -737,6 +737,16 @@ document.getElementById('cartClose').addEventListener('click', () => toggleOverl
 
 let checkoutPayment = 'cod';
 let checkoutCoupon = null;
+let checkoutRequestActive = false;
+
+function setCheckoutBusy(busy, button) {
+  checkoutRequestActive = busy;
+  if (!button) return;
+  button.disabled = busy;
+  button.textContent = busy
+    ? (checkoutPayment === 'razorpay' ? 'Opening payment…' : 'Placing order…')
+    : 'Place order';
+}
 
 function renderCheckoutForm() {
   checkoutPayment = 'cod';
@@ -964,6 +974,17 @@ function payWithRazorpay(payload) {
 
   return createRazorpayOrder(payload).then(({ keyId, razorpayOrder, order }) => {
     return new Promise((resolve, reject) => {
+      let settled = false;
+      const resolveOnce = (value) => {
+        if (settled) return;
+        settled = true;
+        resolve(value);
+      };
+      const rejectOnce = (error) => {
+        if (settled) return;
+        settled = true;
+        reject(error);
+      };
       const checkout = new window.Razorpay({
         key: keyId,
         amount: razorpayOrder.amount,
@@ -984,18 +1005,18 @@ function payWithRazorpay(payload) {
         handler: async (response) => {
           try {
             const verifiedOrder = await verifyRazorpayPayment(response);
-            resolve(verifiedOrder);
+            resolveOnce(verifiedOrder);
           } catch (err) {
-            reject(err);
+            rejectOnce(err);
           }
         },
         modal: {
-          ondismiss: () => reject(new Error('Payment cancelled. Your cart is still saved.'))
+          ondismiss: () => rejectOnce(new Error('Payment cancelled. Your cart is still saved.'))
         }
       });
 
       checkout.on('payment.failed', (response) => {
-        reject(new Error(response.error?.description || 'Payment failed. Please try again.'));
+        rejectOnce(new Error(response.error?.description || 'Payment failed. Please try again.'));
       });
 
       checkout.open();
@@ -1005,6 +1026,7 @@ function payWithRazorpay(payload) {
 
 async function submitOrder(e) {
   e.preventDefault();
+  if (checkoutRequestActive) return;
 
   const errorEl = document.getElementById('checkoutError');
   errorEl.hidden = true;
@@ -1012,8 +1034,7 @@ async function submitOrder(e) {
   const payload = buildCheckoutPayload();
 
   const submitBtn = e.target.querySelector('button[type=submit]');
-  submitBtn.disabled = true;
-  submitBtn.textContent = checkoutPayment === 'razorpay' ? 'Opening payment…' : 'Placing order…';
+  setCheckoutBusy(true, submitBtn);
 
   try {
     const data = checkoutPayment === 'razorpay'
@@ -1024,10 +1045,12 @@ async function submitOrder(e) {
     saveCart();
     renderOrderSuccess(data);
   } catch (err) {
+    console.error('Order placement failed:', err);
     errorEl.textContent = err.message;
     errorEl.hidden = false;
-    submitBtn.disabled = false;
-    submitBtn.textContent = 'Place order';
+    showToast(err.message || 'Could not place order', 'error');
+  } finally {
+    setCheckoutBusy(false, document.contains(submitBtn) ? submitBtn : null);
   }
 }
 

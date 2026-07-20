@@ -53,9 +53,11 @@ variables. Missing SMTP settings will skip email sending, but checkout still suc
 # Email delivery for order confirmations. Keep these server-side only.
 SMTP_HOST=smtp.example.com
 SMTP_PORT=587
+SMTP_SECURE=false
 SMTP_USER=orders@example.com
 SMTP_PASS=replace-with-smtp-password
-SMTP_FROM="Nehal Express <orders@example.com>"
+EMAIL_FROM="Nehal Express <orders@example.com>"
+# SMTP_FROM remains supported as a backward-compatible alias.
 
 # Optional fallback recipient when checkout/customer email is missing.
 ORDER_EMAIL_FALLBACK=owner@example.com

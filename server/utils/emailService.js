@@ -1,13 +1,16 @@
 const nodemailer = require('nodemailer');
 const { generateInvoicePdf } = require('./invoiceService');
 
+let transporter;
+let verificationStarted = false;
+
 function getSmtpConfig() {
   const host = process.env.SMTP_HOST;
   const rawPort = Number(process.env.SMTP_PORT || 587);
   const port = Number.isFinite(rawPort) && rawPort > 0 ? rawPort : 587;
   const user = process.env.SMTP_USER;
   const pass = process.env.SMTP_PASS;
-  const from = process.env.SMTP_FROM || user;
+  const from = process.env.EMAIL_FROM || process.env.SMTP_FROM || user;
 
   if (!host || !user || !pass || !from) {
     return null;
@@ -16,10 +19,49 @@ function getSmtpConfig() {
   return {
     host,
     port,
-    secure: port === 465,
+    secure: process.env.SMTP_SECURE
+      ? String(process.env.SMTP_SECURE).toLowerCase() === 'true'
+      : port === 465,
     auth: { user, pass },
     from
   };
+}
+
+function getTransporter() {
+  const smtp = getSmtpConfig();
+  if (!smtp) return null;
+  if (!transporter) {
+    transporter = nodemailer.createTransport({
+      host: smtp.host,
+      port: smtp.port,
+      secure: smtp.secure,
+      auth: smtp.auth,
+      connectionTimeout: 10000,
+      greetingTimeout: 10000,
+      socketTimeout: 20000
+    });
+  }
+  return transporter;
+}
+
+async function verifyEmailTransporter() {
+  const mailer = getTransporter();
+  if (!mailer || verificationStarted) return;
+  verificationStarted = true;
+  try {
+    await mailer.verify();
+    console.log('Email transporter ready');
+  } catch (err) {
+    console.error('Email transporter verification failed:', err.code || err.message);
+  }
+}
+
+async function sendEmail({ to, subject, html, text, attachments }) {
+  if (!to) throw new Error('Email recipient is required');
+  const smtp = getSmtpConfig();
+  const mailer = getTransporter();
+  if (!smtp || !mailer) throw new Error('SMTP configuration is incomplete');
+  return mailer.sendMail({ from: smtp.from, to, subject, text, html, attachments });
 }
 
 function resolveRecipient(order, fallbackEmail) {
@@ -41,15 +83,7 @@ async function sendOrderConfirmation(order, { customerEmail } = {}) {
   }
 
   const invoicePdf = await generateInvoicePdf(order);
-  const transporter = nodemailer.createTransport({
-    host: smtp.host,
-    port: smtp.port,
-    secure: smtp.secure,
-    auth: smtp.auth
-  });
-
-  await transporter.sendMail({
-    from: smtp.from,
+  await sendEmail({
     to,
     subject: `Nehal Express order confirmation - ${order.id}`,
     text: [
@@ -95,5 +129,7 @@ async function sendOrderConfirmationSafe(order, options) {
 }
 
 module.exports = {
+  sendEmail,
+  verifyEmailTransporter,
   sendOrderConfirmationSafe
 };

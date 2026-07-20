@@ -51,11 +51,12 @@ async function enforceOtpRateLimit({ email, type, maxRequestsPerHour = 5, minRes
 }
 
 async function createAndStoreOtp({ email, userId = null, type, ipAddress = null }) {
-  if (!email) throw new AppError(400, 'Email is required');
+  const normalizedEmail = String(email || '').trim().toLowerCase();
+  if (!normalizedEmail) throw new AppError(400, 'Email is required');
   if (!isValidOtpType(type)) throw new AppError(400, 'Invalid OTP type');
 
   // rate limiting
-  await enforceOtpRateLimit({ email, type });
+  await enforceOtpRateLimit({ email: normalizedEmail, type });
 
   const otp = generateOtp6Digits();
   const hashedOtp = await hashOtp(otp);
@@ -66,7 +67,7 @@ async function createAndStoreOtp({ email, userId = null, type, ipAddress = null 
   // We keep history but mark old OTPs logically expired by expiresAt naturally.
   // Create a new OTP record for each send.
   const doc = await Otp.create({
-    email,
+    email: normalizedEmail,
     userId,
     type,
     hashedOtp,
@@ -80,19 +81,20 @@ async function createAndStoreOtp({ email, userId = null, type, ipAddress = null 
 }
 
 async function verifyOtp({ email, type, otp }) {
-  if (!email) throw new AppError(400, 'Email is required');
+  const normalizedEmail = String(email || '').trim().toLowerCase();
+  if (!normalizedEmail) throw new AppError(400, 'Email is required');
   if (!isValidOtpType(type)) throw new AppError(400, 'Invalid OTP type');
   const normalizedOtp = String(otp ?? '').trim();
   if (!/^\d{6}$/.test(normalizedOtp)) throw new AppError(400, 'OTP must be a 6-digit number');
 
-  const record = await Otp.findOne({ email, type }).sort({ expiresAt: -1, createdAt: -1 });
+  const record = await Otp.findOne({ email: normalizedEmail, type }).sort({ expiresAt: -1, createdAt: -1 });
   if (!record) {
-    throw new AppError(400, 'Invalid or expired OTP');
+    throw new AppError(400, 'Invalid OTP');
   }
 
   // Attempt count based on requestCount
   if (record.isExpired()) {
-    throw new AppError(400, 'Invalid or expired OTP');
+    throw new AppError(400, 'OTP expired. Please request a new OTP.');
   }
   if (record.isUsed()) {
     throw new AppError(400, 'OTP already used');
@@ -103,7 +105,7 @@ async function verifyOtp({ email, type, otp }) {
     // increment requestCount as attempts proxy
     record.requestCount = (record.requestCount || 0) + 1;
     await record.save();
-    throw new AppError(400, 'Invalid or expired OTP');
+    throw new AppError(400, 'Invalid OTP');
   }
 
   record.usedAt = new Date();

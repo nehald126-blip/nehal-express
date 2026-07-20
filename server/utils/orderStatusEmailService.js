@@ -1,25 +1,4 @@
-const nodemailer = require('nodemailer');
-
-function getSmtpConfig() {
-  const host = process.env.SMTP_HOST;
-  const rawPort = Number(process.env.SMTP_PORT || 587);
-  const port = Number.isFinite(rawPort) && rawPort > 0 ? rawPort : 587;
-  const user = process.env.SMTP_USER;
-  const pass = process.env.SMTP_PASS;
-  const from = process.env.SMTP_FROM || user;
-
-  if (!host || !user || !pass || !from) {
-    return null;
-  }
-
-  return {
-    host,
-    port,
-    secure: port === 465,
-    auth: { user, pass },
-    from
-  };
-}
+const { sendEmail } = require('./emailService');
 
 function getFriendlyStatusMessage(newStatus) {
   switch (newStatus) {
@@ -46,12 +25,6 @@ function resolveRecipient(order) {
 }
 
 async function sendOrderStatusEmail(order, { oldStatus, newStatus } = {}) {
-  const smtp = getSmtpConfig();
-  if (!smtp) {
-    console.warn(`Order status email skipped for ${order?.id}: SMTP configuration is incomplete`);
-    return { skipped: true, reason: 'missing_smtp_config' };
-  }
-
   const to = resolveRecipient(order);
   if (!to) {
     console.warn(`Order status email skipped for ${order?.id}: recipient email is missing`);
@@ -91,15 +64,7 @@ async function sendOrderStatusEmail(order, { oldStatus, newStatus } = {}) {
     <p>Thanks for shopping with <strong>Nehal Express</strong>.</p>
   `;
 
-  const transporter = nodemailer.createTransport({
-    host: smtp.host,
-    port: smtp.port,
-    secure: smtp.secure,
-    auth: smtp.auth
-  });
-
-  await transporter.sendMail({
-    from: smtp.from,
+  await sendEmail({
     to,
     subject,
     text,

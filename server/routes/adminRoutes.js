@@ -16,11 +16,12 @@ const {
   deleteCoupon
 } = require('../controllers/adminController');
 const { requireAdmin } = require('../middleware/adminMiddleware');
+const { adminLoginLimiter } = require('../middleware/authRateLimiters');
 const asyncHandler = require('../utils/asyncHandler');
 
 const router = express.Router();
 
-router.post('/login', asyncHandler(login));
+router.post('/login', adminLoginLimiter, asyncHandler(login));
 // TEMPORARY ADMIN RESET ROUTE — remove after successful credential rotation.
 router.post('/reset-credentials', asyncHandler(resetCredentials));
 router.post('/logout', requireAdmin, asyncHandler(logout));

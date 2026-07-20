@@ -3,6 +3,8 @@ const bcrypt = require('bcryptjs');
 const Otp = require('../models/Otp');
 const AppError = require('./../utils/AppError');
 
+const MAX_FAILED_ATTEMPTS = 5;
+
 function isValidOtpType(type) {
   return Otp.OTP_TYPES.includes(type);
 }
@@ -92,26 +94,52 @@ async function verifyOtp({ email, type, otp }) {
     throw new AppError(400, 'Invalid OTP');
   }
 
-  // Attempt count based on requestCount
   if (record.isExpired()) {
     throw new AppError(400, 'OTP expired. Please request a new OTP.');
   }
   if (record.isUsed()) {
     throw new AppError(400, 'OTP already used');
   }
-
-  const match = await compareOtp(normalizedOtp, record.hashedOtp);
-  if (!match) {
-    // increment requestCount as attempts proxy
-    record.requestCount = (record.requestCount || 0) + 1;
-    await record.save();
+  if ((record.failedAttempts || 0) >= MAX_FAILED_ATTEMPTS) {
     throw new AppError(400, 'Invalid OTP');
   }
 
-  record.usedAt = new Date();
-  await record.save();
+  const match = await compareOtp(normalizedOtp, record.hashedOtp);
+  if (!match) {
+    await Otp.updateOne(
+      {
+        _id: record._id,
+        usedAt: null,
+        expiresAt: { $gt: new Date() },
+        $or: [
+          { failedAttempts: { $exists: false } },
+          { failedAttempts: { $lt: MAX_FAILED_ATTEMPTS } }
+        ]
+      },
+      { $inc: { failedAttempts: 1 } }
+    );
+    throw new AppError(400, 'Invalid OTP');
+  }
 
-  return record;
+  const verifiedRecord = await Otp.findOneAndUpdate(
+    {
+      _id: record._id,
+      usedAt: null,
+      expiresAt: { $gt: new Date() },
+      $or: [
+        { failedAttempts: { $exists: false } },
+        { failedAttempts: { $lt: MAX_FAILED_ATTEMPTS } }
+      ]
+    },
+    { $set: { usedAt: new Date() } },
+    { new: true }
+  );
+
+  if (!verifiedRecord) {
+    throw new AppError(400, 'Invalid OTP');
+  }
+
+  return verifiedRecord;
 }
 
 module.exports = {

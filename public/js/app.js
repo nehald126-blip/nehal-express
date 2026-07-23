@@ -42,7 +42,9 @@ function loadCartProduct(productId) {
       return product;
     })
     .then((product) => {
-      cartProductCache.set(productId, { product, loadedAt: Date.now() });
+      if (cartProductRequests.get(productId) === request) {
+        cartProductCache.set(productId, { product, loadedAt: Date.now() });
+      }
       return product;
     })
     .finally(() => {
@@ -130,6 +132,20 @@ function renderWishlistCount() {
   if (count) count.textContent = state.wishlist.length;
 }
 
+function syncProductGridWishlistButtons() {
+  const wishlistIds = new Set(state.wishlist.map((product) => product.id));
+  document.querySelectorAll('#productGrid [data-wishlist]').forEach((button) => {
+    const wishlisted = wishlistIds.has(button.dataset.wishlist);
+    const label = wishlisted ? 'Remove from wishlist' : 'Add to wishlist';
+    button.classList.toggle('active', wishlisted);
+    button.setAttribute('aria-pressed', String(wishlisted));
+    button.setAttribute('aria-label', label);
+    if (button.hasAttribute('title')) button.title = label;
+    const icon = button.querySelector('span');
+    if (icon) icon.textContent = wishlisted ? '♥' : '♡';
+  });
+}
+
 function stars(value) {
   const rating = Math.round(Number(value || 0));
   return '★'.repeat(rating) + '☆'.repeat(Math.max(0, 5 - rating));
@@ -164,7 +180,7 @@ async function loadWishlist() {
   if (!authToken()) {
     state.wishlist = [];
     renderWishlistCount();
-    renderProductGrid();
+    syncProductGridWishlistButtons();
     return;
   }
 
@@ -178,7 +194,7 @@ async function loadWishlist() {
   }
 
   renderWishlistCount();
-  renderProductGrid();
+  syncProductGridWishlistButtons();
 }
 
 function saveCart() {
@@ -350,7 +366,7 @@ async function toggleWishlist(productId) {
     ? state.wishlist.filter((item) => item.id !== productId)
     : [...state.wishlist, product].filter(Boolean);
   renderWishlistCount();
-  renderProductGrid();
+  syncProductGridWishlistButtons();
   showToast(wasWishlisted ? 'Removed from Wishlist' : 'Added to Wishlist');
 
   try {
@@ -362,11 +378,11 @@ async function toggleWishlist(productId) {
     if (!res.ok) throw new Error(data.error || 'Wishlist update failed');
     state.wishlist = data.wishlist || [];
     renderWishlistCount();
-    renderProductGrid();
+    syncProductGridWishlistButtons();
   } catch (err) {
     state.wishlist = previous;
     renderWishlistCount();
-    renderProductGrid();
+    syncProductGridWishlistButtons();
     showToast(err.message || 'Could not update Wishlist');
   }
 }
@@ -723,7 +739,7 @@ async function renderCart() {
     const p = details[idx];
 
     return `
-      <div class="cart-item" data-idx="${idx}">
+      <div class="cart-item" data-product-id="${escapeHtml(item.productId)}" data-size="${escapeHtml(item.size || '')}" data-color="${escapeHtml(item.color || '')}">
         <img src="${p.images[0]}" alt="${p.name}" loading="lazy" decoding="async" />
         <div class="cart-item-info">
           <span class="cart-item-name">${p.name}</span>
@@ -745,31 +761,35 @@ async function renderCart() {
   let subtotal = 0;
   cartSnapshot.forEach((item, idx) => subtotal += details[idx].price * item.qty);
   updateCartTotals(subtotal);
+}
 
-  wrap.querySelectorAll('.cart-item').forEach(el => {
-    const idx = Number(el.dataset.idx);
+function handleCartItemsClick(event) {
+  const action = event.target.closest('.qty-plus, .qty-minus, .cart-item-remove');
+  const row = action?.closest('.cart-item');
+  if (!action || !row) return;
 
-    el.querySelector('.qty-plus').addEventListener('click', () => {
-      state.cart[idx].qty += 1;
-      saveCart();
-      renderCart();
-    });
+  const idx = state.cart.findIndex((item) => (
+    item.productId === row.dataset.productId
+    && String(item.size || '') === row.dataset.size
+    && String(item.color || '') === row.dataset.color
+  ));
+  if (idx < 0) return;
 
-    el.querySelector('.qty-minus').addEventListener('click', () => {
-      state.cart[idx].qty = Math.max(1, state.cart[idx].qty - 1);
-      saveCart();
-      renderCart();
-    });
+  if (action.classList.contains('qty-plus')) {
+    state.cart[idx].qty += 1;
+  } else if (action.classList.contains('qty-minus')) {
+    state.cart[idx].qty = Math.max(1, state.cart[idx].qty - 1);
+  } else {
+    const [removed] = state.cart.splice(idx, 1);
+    const productStillInCart = state.cart.some((item) => item.productId === removed.productId);
+    if (!productStillInCart) {
+      cartProductCache.delete(removed.productId);
+      cartProductRequests.delete(removed.productId);
+    }
+  }
 
-    el.querySelector('.cart-item-remove').addEventListener('click', () => {
-      const productId = state.cart[idx]?.productId;
-      state.cart.splice(idx, 1);
-      cartProductCache.delete(productId);
-      cartProductRequests.delete(productId);
-      saveCart();
-      renderCart();
-    });
-  });
+  saveCart();
+  renderCart();
 }
 
 function updateCartTotals(subtotal) {
@@ -785,6 +805,7 @@ document.getElementById('cartToggle').addEventListener('click', () => {
 });
 
 document.getElementById('cartClose').addEventListener('click', () => toggleOverlay('cartOverlay', false));
+document.getElementById('cartItems').addEventListener('click', handleCartItemsClick);
 
 let checkoutPayment = 'cod';
 let checkoutCoupon = null;

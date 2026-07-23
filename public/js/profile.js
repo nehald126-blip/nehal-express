@@ -679,18 +679,19 @@ function renderWishlist() {
       <button type="button" class="wishlist-remove" data-remove-wishlist="${escapeHtml(product.id)}" aria-label="Remove from wishlist">&hearts;</button>
     </article>
   `).join('');
-
-  list.querySelectorAll('[data-wishlist-product]').forEach((card) => {
-    card.addEventListener('click', () => openWishlistProduct(card.dataset.wishlistProduct));
-  });
-
-  list.querySelectorAll('[data-remove-wishlist]').forEach((button) => {
-    button.addEventListener('click', async (event) => {
-      event.stopPropagation();
-      await removeWishlistItem(button.dataset.removeWishlist);
-    });
-  });
   observeReveals(list);
+}
+
+async function handleWishlistListClick(event) {
+  const removeButton = event.target.closest('[data-remove-wishlist]');
+  if (removeButton) {
+    event.stopPropagation();
+    await removeWishlistItem(removeButton.dataset.removeWishlist);
+    return;
+  }
+
+  const card = event.target.closest('[data-wishlist-product]');
+  if (card) openWishlistProduct(card.dataset.wishlistProduct);
 }
 
 async function removeWishlistItem(productId) {
@@ -1136,6 +1137,7 @@ document.getElementById('wishlistProductClose').addEventListener('click', closeW
 document.getElementById('wishlistProductModal').addEventListener('click', (event) => {
   if (event.target.id === 'wishlistProductModal') closeWishlistProduct();
 });
+document.getElementById('wishlistList').addEventListener('click', handleWishlistListClick);
 
 document.getElementById('passwordForm').addEventListener('submit', async (event) => {
   event.preventDefault();

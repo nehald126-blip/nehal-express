@@ -309,6 +309,10 @@ button:active:not(:disabled),
   overflow: hidden; cursor: pointer; transition: opacity .45s ease, transform .45s ease, box-shadow .2s ease;
   display: flex; flex-direction: column;
 }
+.product-card:not(.product-skeleton-card) {
+  content-visibility: auto;
+  contain-intrinsic-size: 420px;
+}
 .product-card:not(.product-skeleton-card):hover { transform: translateY(-6px); box-shadow: var(--shadow-card); }
 .product-thumb { position: relative; aspect-ratio: 3/4; overflow: hidden; background: var(--ivory-deep); }
 .product-thumb img { width: 100%; height: 100%; object-fit: cover; transition: transform .4s ease; }
